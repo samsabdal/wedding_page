@@ -8,9 +8,12 @@
   'use strict';
 
   /* ==========================================================================
-     0. CANONICAL PUBLIC INVITATION URL (CLOUDFLARE PAGES PRODUCTION)
+     0. CANONICAL PUBLIC INVITATION URL & FAMILY CONTACT CONFIGURATION
      ========================================================================== */
   const PUBLIC_SITE_URL = 'https://wedding-page-1xp.pages.dev/';
+
+  // Verified Groom's Family WhatsApp Contact (Venue 3: Residence & RSVP / Phone: +91 82802 59786)
+  const FAMILY_WHATSAPP_NUMBER = '918280259786';
 
   /* ==========================================================================
      1. VENUE CONFIGURATION & CONSTANTS (MANDATORY EXACT LINKS)
@@ -233,11 +236,28 @@
     const sendDuaBtn = document.getElementById('sendDuaBtn');
     const drawerSendDuaBtn = document.getElementById('drawerSendDuaBtn');
 
-    // Centralized WhatsApp Sharing Helper
-    function shareViaWhatsApp(message) {
-      const whatsappURL =
-        'https://api.whatsapp.com/send?text=' + encodeURIComponent(message);
-      window.open(whatsappURL, '_blank', 'noopener,noreferrer');
+    // Centralized WhatsApp URL Builders
+    // Flow A: Recipient-Free Wedding Invitation Sharing (Allows guest to select any contact or group)
+    function getInvitationWhatsAppUrl() {
+      return (
+        'https://wa.me/?text=' +
+        encodeURIComponent(getWeddingInvitationMessage())
+      );
+    }
+
+    // Flow B: Direct Family Dua Messaging (Groom's Family WhatsApp Contact Only)
+    function getFamilyDuaWhatsAppUrl() {
+      return (
+        'https://wa.me/' +
+        FAMILY_WHATSAPP_NUMBER +
+        '?text=' +
+        encodeURIComponent(getIslamicDuaMessage())
+      );
+    }
+
+    // WhatsApp Opener for Invitation Sharing Fallback
+    function shareInvitationViaWhatsApp() {
+      window.open(getInvitationWhatsAppUrl(), '_blank', 'noopener,noreferrer');
     }
 
     // Message 1: Pre-filled Wedding Invitation Template
@@ -311,12 +331,13 @@
       ].join('\n');
     }
 
-    // Native Web Share API Payload
-    const sharePayload = {
-      title: 'MD Karimullah & Hina Quadri | Wedding Invitation',
-      text: 'You are warmly invited to celebrate the wedding of MD Karimullah & Hina Quadri.',
-      url: PUBLIC_SITE_URL,
-    };
+    // Native Web Share API Payload (Supplies full multiline invitation; avoids duplicate URL)
+    function getSharePayload() {
+      return {
+        title: 'MD Karimullah & Hina Quadri | Wedding Invitation',
+        text: getWeddingInvitationMessage(),
+      };
+    }
 
     // Copy invitation link to clipboard with execCommand fallback
     function copyInvitationLink(showToastOnSuccess = true) {
@@ -358,39 +379,31 @@
       }
     }
 
-    // Handlers for Share Invitation
+    // Handlers for Share Invitation (Any Recipient)
     function handleShare(e) {
       if (e) e.preventDefault();
 
       if (navigator.share) {
         navigator
-          .share(sharePayload)
+          .share(getSharePayload())
           .then(() => {
             showToast('Thank you for sharing!');
           })
           .catch((err) => {
-            // Gracefully ignore user cancellation
+            // Gracefully ignore user cancellation without false toast or opening fallback
             if (err && (err.name === 'AbortError' || err.code === 20)) {
               return;
             }
-            // For other failures, copy link & open WhatsApp invitation
-            copyInvitationLink(true);
-            shareViaWhatsApp(getWeddingInvitationMessage());
+            // For other unexpected failures, fallback to WhatsApp invitation (any recipient)
+            shareInvitationViaWhatsApp();
           });
       } else {
-        // Fallback for browsers without Web Share API
-        copyInvitationLink(true);
-        shareViaWhatsApp(getWeddingInvitationMessage());
+        // Fallback for browsers without Web Share API: open WhatsApp invitation (any recipient)
+        shareInvitationViaWhatsApp();
       }
     }
 
-    // Handlers for Send Dua via WhatsApp
-    function handleSendDua(e) {
-      if (e) e.preventDefault();
-      shareViaWhatsApp(getIslamicDuaMessage());
-    }
-
-    // Attach event listeners
+    // Attach event listeners for Share Invitation (Any Recipient)
     if (shareBtn) shareBtn.addEventListener('click', handleShare);
     if (navShareBtn) navShareBtn.addEventListener('click', handleShare);
     if (drawerShareBtn) drawerShareBtn.addEventListener('click', handleShare);
@@ -402,18 +415,19 @@
       });
     }
 
+    // Flow B: Configure Send Dua buttons (Direct routing to Groom's Family WhatsApp contact only)
+    const familyDuaUrl = getFamilyDuaWhatsAppUrl();
+
     if (sendDuaBtn) {
-      sendDuaBtn.href =
-        'https://api.whatsapp.com/send?text=' +
-        encodeURIComponent(getIslamicDuaMessage());
-      sendDuaBtn.addEventListener('click', handleSendDua);
+      sendDuaBtn.href = familyDuaUrl;
+      sendDuaBtn.setAttribute('target', '_blank');
+      sendDuaBtn.setAttribute('rel', 'noopener noreferrer');
     }
 
     if (drawerSendDuaBtn) {
-      drawerSendDuaBtn.href =
-        'https://api.whatsapp.com/send?text=' +
-        encodeURIComponent(getIslamicDuaMessage());
-      drawerSendDuaBtn.addEventListener('click', handleSendDua);
+      drawerSendDuaBtn.href = familyDuaUrl;
+      drawerSendDuaBtn.setAttribute('target', '_blank');
+      drawerSendDuaBtn.setAttribute('rel', 'noopener noreferrer');
     }
   }
 
@@ -766,7 +780,7 @@
   /* ==========================================================================
      10. INITIALIZATION ON DOM READY
      ========================================================================== */
-  document.addEventListener('DOMContentLoaded', function () {
+  function initApp() {
     setupVenueButtons();
     initCountdown();
     setupCalendarActions();
@@ -775,5 +789,11 @@
     setupScrollReveals();
     initGoldDustCanvas();
     setupNavigation();
-  });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+  } else {
+    initApp();
+  }
 })();
