@@ -223,14 +223,95 @@
   }
 
   /* ==========================================================================
-     4. SHARE INVITATION (WEB SHARE API, WHATSAPP & CLIPBOARD COPY)
+     4. SHARE INVITATION & ISLAMIC DUA (WEB SHARE API, WHATSAPP & CLIPBOARD)
      ========================================================================== */
   function setupShareActions() {
     const shareBtn = document.getElementById('shareInvitationBtn');
     const navShareBtn = document.getElementById('navShareBtn');
     const drawerShareBtn = document.getElementById('drawerShareBtn');
     const copyLinkBtn = document.getElementById('copyInvitationLinkBtn');
+    const sendDuaBtn = document.getElementById('sendDuaBtn');
+    const drawerSendDuaBtn = document.getElementById('drawerSendDuaBtn');
 
+    // Centralized WhatsApp Sharing Helper
+    function shareViaWhatsApp(message) {
+      const whatsappURL =
+        'https://api.whatsapp.com/send?text=' + encodeURIComponent(message);
+      window.open(whatsappURL, '_blank', 'noopener,noreferrer');
+    }
+
+    // Message 1: Pre-filled Wedding Invitation Template
+    function getWeddingInvitationMessage() {
+      return [
+        '🌙✨ بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ ✨🌙',
+        '',
+        '*Assalamu Alaikum wa Rahmatullahi wa Barakatuh* 🤍',
+        '',
+        '💚 *A BEAUTIFUL BEGINNING, BY THE BLESSINGS OF ALLAH* 💚',
+        '',
+        'With the grace and blessings of Allah ﷻ, we are delighted to invite you to celebrate the blessed Nikah and wedding festivities of',
+        '',
+        '💍 *MD Karimullah*',
+        '        &',
+        '🌹 *Hina Quadri* 🌹',
+        '',
+        '📅 *Wedding Date:* Wednesday, 28 October 2026',
+        '',
+        '📍 *Marriage Venue:* Royal Palace Mandap',
+        '',
+        '📍 *Reception Venue:* Topiwale Baba Mandap',
+        '',
+        'Your gracious presence, heartfelt duas, and blessings would make this joyous occasion even more meaningful to us. 🤲💫',
+        '',
+        'May Allah ﷻ bless this sacred union with love, mercy, tranquility, barakah, and lasting happiness. Ameen. 🤍',
+        '',
+        '🔗 *VIEW THE COMPLETE WEDDING INVITATION*',
+        PUBLIC_SITE_URL,
+        '',
+        '🌿 With warm regards and sincere duas,',
+        '*The Family of MD Karimullah & Hina Quadri*',
+        '',
+        'جَزَاكُمُ اللَّهُ خَيْرًا',
+      ].join('\n');
+    }
+
+    // Message 2: Heartfelt Islamic Wedding Dua Template
+    function getIslamicDuaMessage() {
+      return [
+        '🌙🤍 *A HEARTFELT DUA FOR THE NEWLYWEDS* 🤍🌙',
+        '',
+        '*Assalamu Alaikum wa Rahmatullahi wa Barakatuh* 🌿',
+        '',
+        '💍 *MD Karimullah & Hina Quadri* 💍',
+        '',
+        'On this blessed occasion, we humbly ask Allah ﷻ to shower the newlyweds with His infinite mercy, guidance, and blessings. 🤲✨',
+        '',
+        'May Allah fill their hearts with sincere love, their home with peace, their lives with happiness, and their marriage with endless barakah. 💚',
+        '',
+        'May He strengthen their bond through patience, understanding, compassion, and faith; protect them from hardship; grant them halal rizq; and bless them with a life of righteousness and goodness.',
+        '',
+        '🌹 *The Prophetic Dua for Marriage* 🌹',
+        '',
+        'بَارَكَ اللَّهُ لَكَ، وَبَارَكَ عَلَيْكَ، وَجَمَعَ بَيْنَكُمَا فِي خَيْرٍ',
+        '',
+        '*Transliteration:*',
+        'Barakallahu laka, wa baraka \'alayka, wa jama\'a baynakuma fi khayr.',
+        '',
+        '*Meaning:*',
+        'May Allah bless you, shower His blessings upon you, and unite you both in goodness.',
+        '',
+        '🤲 *Ameen Ya Rabbal Alameen.*',
+        '',
+        'May their marriage become a source of sakinah, mawaddah, rahmah, and lasting goodness. May Allah guide them together towards everything that pleases Him. Ameen. 🌙',
+        '',
+        '🔗 *Wedding Invitation:*',
+        PUBLIC_SITE_URL,
+        '',
+        '💚 Remember the couple in your sincere duas.',
+      ].join('\n');
+    }
+
+    // Native Web Share API Payload
     const sharePayload = {
       title: 'MD Karimullah & Hina Quadri | Wedding Invitation',
       text: 'You are warmly invited to celebrate the wedding of MD Karimullah & Hina Quadri.',
@@ -277,16 +358,7 @@
       }
     }
 
-    // WhatsApp Sharing Endpoint: https://api.whatsapp.com/send?text=
-    function openWhatsAppShare() {
-      const waText =
-        'Assalamu Alaikum! You are cordially invited to celebrate the wedding of MD Karimullah & Hina Quadri on Wednesday, 28th October 2026. Insha\'Allah!\n\n' +
-        'View Invitation & Details:\n' +
-        PUBLIC_SITE_URL;
-      const waUrl = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(waText);
-      window.open(waUrl, '_blank', 'noopener,noreferrer');
-    }
-
+    // Handlers for Share Invitation
     function handleShare(e) {
       if (e) e.preventDefault();
 
@@ -301,23 +373,47 @@
             if (err && (err.name === 'AbortError' || err.code === 20)) {
               return;
             }
-            // For other failures, fall back to copying link
+            // For other failures, copy link & open WhatsApp invitation
             copyInvitationLink(true);
+            shareViaWhatsApp(getWeddingInvitationMessage());
           });
       } else {
-        // Fallback for browsers without Web Share API: copy link to clipboard
+        // Fallback for browsers without Web Share API
         copyInvitationLink(true);
+        shareViaWhatsApp(getWeddingInvitationMessage());
       }
     }
 
+    // Handlers for Send Dua via WhatsApp
+    function handleSendDua(e) {
+      if (e) e.preventDefault();
+      shareViaWhatsApp(getIslamicDuaMessage());
+    }
+
+    // Attach event listeners
     if (shareBtn) shareBtn.addEventListener('click', handleShare);
     if (navShareBtn) navShareBtn.addEventListener('click', handleShare);
     if (drawerShareBtn) drawerShareBtn.addEventListener('click', handleShare);
+
     if (copyLinkBtn) {
       copyLinkBtn.addEventListener('click', function (e) {
         e.preventDefault();
         copyInvitationLink(true);
       });
+    }
+
+    if (sendDuaBtn) {
+      sendDuaBtn.href =
+        'https://api.whatsapp.com/send?text=' +
+        encodeURIComponent(getIslamicDuaMessage());
+      sendDuaBtn.addEventListener('click', handleSendDua);
+    }
+
+    if (drawerSendDuaBtn) {
+      drawerSendDuaBtn.href =
+        'https://api.whatsapp.com/send?text=' +
+        encodeURIComponent(getIslamicDuaMessage());
+      drawerSendDuaBtn.addEventListener('click', handleSendDua);
     }
   }
 
