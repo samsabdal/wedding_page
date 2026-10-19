@@ -8,6 +8,11 @@
   'use strict';
 
   /* ==========================================================================
+     0. CANONICAL PUBLIC INVITATION URL (CLOUDFLARE PAGES PRODUCTION)
+     ========================================================================== */
+  const PUBLIC_SITE_URL = 'https://wedding-page-1xp.pages.dev/';
+
+  /* ==========================================================================
      1. VENUE CONFIGURATION & CONSTANTS (MANDATORY EXACT LINKS)
      ========================================================================== */
   const VENUES = {
@@ -132,7 +137,8 @@
       dates: '20261028T050000/20261028T220000',
       ctz: 'Asia/Kolkata',
       details:
-        'Nikah-e-Masnoon: 05:00 AM | Dawat-e-Walima Lunch: 12:00 PM | Rukhsati: 05:00 PM\nVenue: Royal Palace Mandap, Bhadrak, Odisha, India',
+        'Nikah-e-Masnoon: 05:00 AM | Dawat-e-Walima Lunch: 12:00 PM | Rukhsati: 05:00 PM\nVenue: Royal Palace Mandap, Bhadrak, Odisha, India\n\nInvitation: ' +
+        PUBLIC_SITE_URL,
       location: 'Royal Palace Mandap, Bhadrak, Odisha, India',
     });
     const gCalUrl = 'https://calendar.google.com/calendar/render?' + gCalParams.toString();
@@ -186,7 +192,9 @@
           'DTSTART;TZID=Asia/Kolkata:20261028T050000',
           'DTEND;TZID=Asia/Kolkata:20261028T220000',
           'SUMMARY:Wedding Ceremony — MD Karimullah & Hina Quadri',
-          'DESCRIPTION:Insha Allah\\, you are cordially invited to celebrate the auspicious Nikah of MD Karimullah and Hina Quadri.\\n\\nProgramme:\\n- Nikah-e-Masnoon: 05:00 AM\\n- Dawat-e-Walima / Lunch: 12:00 PM\\n- Rukhsati: 05:00 PM',
+          'DESCRIPTION:Insha Allah\\, you are cordially invited to celebrate the auspicious Nikah of MD Karimullah and Hina Quadri.\\n\\nProgramme:\\n- Nikah-e-Masnoon: 05:00 AM\\n- Dawat-e-Walima / Lunch: 12:00 PM\\n- Rukhsati: 05:00 PM\\n\\nInvitation Website: ' +
+            PUBLIC_SITE_URL,
+          'URL:' + PUBLIC_SITE_URL,
           'LOCATION:Royal Palace Mandap\\, Bhadrak\\, Odisha\\, India',
           'STATUS:CONFIRMED',
           'SEQUENCE:0',
@@ -215,60 +223,102 @@
   }
 
   /* ==========================================================================
-     4. SHARE INVITATION (WEB SHARE API + WHATSAPP FALLBACK)
+     4. SHARE INVITATION (WEB SHARE API, WHATSAPP & CLIPBOARD COPY)
      ========================================================================== */
   function setupShareActions() {
     const shareBtn = document.getElementById('shareInvitationBtn');
     const navShareBtn = document.getElementById('navShareBtn');
+    const drawerShareBtn = document.getElementById('drawerShareBtn');
+    const copyLinkBtn = document.getElementById('copyInvitationLinkBtn');
 
-    const shareData = {
-      title: 'MD Karimullah & Hina Quadri — Wedding Invitation',
-      text: "You are cordially invited to celebrate the wedding of MD Karimullah & Hina Quadri on Wednesday, 28th October 2026. Insha'Allah!",
-      url: window.location.href,
+    const sharePayload = {
+      title: 'MD Karimullah & Hina Quadri | Wedding Invitation',
+      text: 'You are warmly invited to celebrate the wedding of MD Karimullah & Hina Quadri.',
+      url: PUBLIC_SITE_URL,
     };
+
+    // Copy invitation link to clipboard with execCommand fallback
+    function copyInvitationLink(showToastOnSuccess = true) {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        navigator.clipboard
+          .writeText(PUBLIC_SITE_URL)
+          .then(() => {
+            if (showToastOnSuccess) showToast('Invitation link copied to clipboard!');
+          })
+          .catch(() => {
+            fallbackExecCommandCopy(showToastOnSuccess);
+          });
+      } else {
+        fallbackExecCommandCopy(showToastOnSuccess);
+      }
+    }
+
+    function fallbackExecCommandCopy(showToastOnSuccess = true) {
+      try {
+        const tempTextarea = document.createElement('textarea');
+        tempTextarea.value = PUBLIC_SITE_URL;
+        tempTextarea.style.position = 'fixed';
+        tempTextarea.style.top = '-9999px';
+        tempTextarea.style.left = '-9999px';
+        tempTextarea.setAttribute('readonly', '');
+        document.body.appendChild(tempTextarea);
+        tempTextarea.focus();
+        tempTextarea.select();
+        tempTextarea.setSelectionRange(0, 99999);
+        const successful = document.execCommand('copy');
+        document.body.removeChild(tempTextarea);
+        if (successful) {
+          if (showToastOnSuccess) showToast('Invitation link copied to clipboard!');
+        } else {
+          showToast('Could not copy link. URL: ' + PUBLIC_SITE_URL);
+        }
+      } catch (err) {
+        showToast('Could not copy link. URL: ' + PUBLIC_SITE_URL);
+      }
+    }
+
+    // WhatsApp Sharing Endpoint: https://api.whatsapp.com/send?text=
+    function openWhatsAppShare() {
+      const waText =
+        'Assalamu Alaikum! You are cordially invited to celebrate the wedding of MD Karimullah & Hina Quadri on Wednesday, 28th October 2026. Insha\'Allah!\n\n' +
+        'View Invitation & Details:\n' +
+        PUBLIC_SITE_URL;
+      const waUrl = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(waText);
+      window.open(waUrl, '_blank', 'noopener,noreferrer');
+    }
 
     function handleShare(e) {
       if (e) e.preventDefault();
 
-      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      if (navigator.share) {
         navigator
-          .share(shareData)
-          .then(() => showToast('Thank you for sharing!'))
-          .catch((err) => {
-            if (err.name !== 'AbortError') {
-              fallbackShare();
-            }
-          });
-      } else {
-        fallbackShare();
-      }
-    }
-
-    function fallbackShare() {
-      // Copy URL to clipboard
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard
-          .writeText(window.location.href)
+          .share(sharePayload)
           .then(() => {
-            showToast('Invitation link copied to clipboard!');
+            showToast('Thank you for sharing!');
           })
-          .catch(() => {
-            openWhatsAppShare();
+          .catch((err) => {
+            // Gracefully ignore user cancellation
+            if (err && (err.name === 'AbortError' || err.code === 20)) {
+              return;
+            }
+            // For other failures, fall back to copying link
+            copyInvitationLink(true);
           });
       } else {
-        openWhatsAppShare();
+        // Fallback for browsers without Web Share API: copy link to clipboard
+        copyInvitationLink(true);
       }
-    }
-
-    function openWhatsAppShare() {
-      const waText = encodeURIComponent(
-        `${shareData.text}\n\nView Invitation & Details: ${shareData.url}`
-      );
-      window.open(`https://wa.me/?text=${waText}`, '_blank');
     }
 
     if (shareBtn) shareBtn.addEventListener('click', handleShare);
     if (navShareBtn) navShareBtn.addEventListener('click', handleShare);
+    if (drawerShareBtn) drawerShareBtn.addEventListener('click', handleShare);
+    if (copyLinkBtn) {
+      copyLinkBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        copyInvitationLink(true);
+      });
+    }
   }
 
   /* ==========================================================================

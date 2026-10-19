@@ -2,6 +2,8 @@
 
 A bespoke, mobile-first, single-page Islamic wedding invitation website designed for **MD Karimullah** and **Hina Quadri**.
 
+**Live Invitation Website:** [https://wedding-page-1xp.pages.dev/](https://wedding-page-1xp.pages.dev/)
+
 ## ✨ Design & Features
 
 - **Aesthetic:** Royal Emerald theme (`#063C30`) with antique gold foil accents (`#C9A35B`), warm ivory typography, and subtle repeating *"An-nikah min sunnati"* calligraphic watermark.
